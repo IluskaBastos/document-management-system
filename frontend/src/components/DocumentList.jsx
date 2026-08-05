@@ -41,7 +41,7 @@ export default function DocumentList({ documents, onDownload, downloadingDocumen
             </p>
             <p>{formatFileSize(documentItem.size)}</p>
             <p>Dono: {documentItem.owner}</p>
-            <p>Enviado em: {formatDate(documentItem.createdAt)}</p>
+            <p>Enviado em: {formatDate(documentItem.uploadedAt || documentItem.createdAt)}</p>
             <DownloadButton
               documentItem={documentItem}
               onDownload={onDownload}

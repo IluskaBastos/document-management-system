@@ -1,47 +1,53 @@
 const documentsService = require('../services/documents.service');
 
+function createHttpError(statusCode, message) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+}
+
 function resolveOwner(req) {
-  return req.header('x-user-id') || 'anonymous';
+  const owner = req.header('x-user-id');
+  if (!owner || !owner.trim()) {
+    throw createHttpError(400, 'Cabecalho x-user-id e obrigatorio.');
+  }
+
+  return owner.trim();
 }
 
-function sendError(res, error) {
-  const statusCode = error.statusCode || 500;
-  const message = statusCode === 500 ? 'Erro interno no servidor.' : error.message;
-
-  return res.status(statusCode).json({ error: message });
-}
-
-function uploadDocument(req, res) {
+function uploadDocument(req, res, next) {
   try {
     const owner = resolveOwner(req);
     const document = documentsService.uploadDocument({ file: req.file, owner });
 
     return res.status(201).json({ document });
   } catch (error) {
-    return sendError(res, error);
+    return next(error);
   }
 }
 
-function listDocuments(req, res) {
+function listDocuments(req, res, next) {
   try {
-    const documents = documentsService.listDocuments();
+    const owner = resolveOwner(req);
+    const documents = documentsService.listDocuments(owner);
     return res.status(200).json({ documents });
   } catch (error) {
-    return sendError(res, error);
+    return next(error);
   }
 }
 
-function downloadDocument(req, res) {
+function downloadDocument(req, res, next) {
   try {
-    const { filePath, downloadName } = documentsService.getDocumentForDownload(req.params.id);
+    const owner = resolveOwner(req);
+    const { filePath, downloadName } = documentsService.getDocumentForDownload(req.params.id, owner);
 
     return res.download(filePath, downloadName, (error) => {
       if (error && !res.headersSent) {
-        sendError(res, error);
+        next(error);
       }
     });
   } catch (error) {
-    return sendError(res, error);
+    return next(error);
   }
 }
 

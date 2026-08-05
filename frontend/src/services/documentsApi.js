@@ -1,5 +1,13 @@
 const API_PREFIX = '/api';
 
+function getRequiredOwner(owner) {
+  if (!owner || !owner.trim()) {
+    throw new Error('Informe o identificador do usuario antes de continuar.');
+  }
+
+  return owner.trim();
+}
+
 async function parseErrorResponse(response) {
   try {
     const data = await response.json();
@@ -18,22 +26,29 @@ async function ensureSuccess(response) {
   return response;
 }
 
-export async function listDocuments() {
-  const response = await fetch(`${API_PREFIX}/documents`);
+export async function listDocuments(owner) {
+  const safeOwner = getRequiredOwner(owner);
+
+  const response = await fetch(`${API_PREFIX}/documents`, {
+    headers: {
+      'x-user-id': safeOwner,
+    },
+  });
   await ensureSuccess(response);
   const data = await response.json();
 
   return data.documents || [];
 }
 
-export async function uploadDocument(file, owner = 'anonymous') {
+export async function uploadDocument(file, owner) {
+  const safeOwner = getRequiredOwner(owner);
   const body = new FormData();
   body.append('file', file);
 
   const response = await fetch(`${API_PREFIX}/upload`, {
     method: 'POST',
     headers: {
-      'x-user-id': owner,
+      'x-user-id': safeOwner,
     },
     body,
   });
@@ -44,8 +59,14 @@ export async function uploadDocument(file, owner = 'anonymous') {
   return data.document;
 }
 
-export async function downloadDocument(documentId, originalName) {
-  const response = await fetch(`${API_PREFIX}/documents/${documentId}/download`);
+export async function downloadDocument(documentId, originalName, owner) {
+  const safeOwner = getRequiredOwner(owner);
+
+  const response = await fetch(`${API_PREFIX}/documents/${documentId}/download`, {
+    headers: {
+      'x-user-id': safeOwner,
+    },
+  });
   await ensureSuccess(response);
 
   const blob = await response.blob();

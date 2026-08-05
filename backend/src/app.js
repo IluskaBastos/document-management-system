@@ -28,7 +28,15 @@ app.get('/health', (req, res) => {
 
 app.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: 'Arquivo excede o limite maximo permitido.' });
+    }
+
     return res.status(400).json({ error: `Erro de upload: ${err.message}` });
+  }
+
+  if (err && err.code === 'ENOENT') {
+    return res.status(404).json({ error: 'Arquivo nao encontrado no armazenamento local.' });
   }
 
   if (err) {
